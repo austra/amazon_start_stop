@@ -34,7 +34,7 @@ $ git push heroku master
 Configure your app settings using [Heroku config vars](https://devcenter.heroku.com/articles/config-vars).
 
 Get your AWS credentials here:
-[AWS Credentials](http://aws.amazon.com/iam/) 
+[AWS Credentials](http://aws.amazon.com/iam/).
 
 Rename `.env.sample` to `.env` or Create a file named `.env` and add the following, customized to your needs:
 
@@ -55,9 +55,11 @@ LANG="en_US.UTF-8"
 START_TIME="9:45pm"
 STOP_TIME="10:45pm"
 TIMEZONE="America/Denver"
+```
 
 Run the following to create the Herkou Environment Variables from your `.env` file.
 
+```bash
 $ heroku plugins:install git://github.com/ddollar/heroku-config.git
 $ heroku config:push 
 ```
