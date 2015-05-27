@@ -2,50 +2,55 @@
 
 require 'fog'
 require 'tzinfo'
+require 'tod'
+require 'tod/core_extensions'
 
-START_HOUR = 6 # Start 6AM
-STOP_HOUR  = 0 # Stop  0AM (midnight)
+START_TIME = Tod::TimeOfDay.parse ENV['START_TIME']
+STOP_TIME = Tod::TimeOfDay.parse ENV['STOP_TIME']
 
 conn = Fog::Compute::AWS.new(aws_access_key_id:     ENV['AWS_ACCESS_KEY_ID'],
-                             aws_secret_access_key: ENV['AWS_SECRET_ACCESS_KEY'])
+                             aws_secret_access_key: ENV['AWS_SECRET_ACCESS_KEY'],
+                             region: ENV['AWS_REGION'])
+#Region: us-west-2
 
 server = conn.servers.get(ENV['AWS_INSTANCE_ID'])
 
-puts "amazon_start_stop server #{server.id}"
+tz = TZInfo::Timezone.get(ENV['TIMEZONE'])
 
-tz = TZInfo::Timezone.get('America/Sao_Paulo')
+now = tz.now.to_time_of_day   
 
-# To get all zone identifiers by Country i.e. US, BR etc.
-# TZInfo::Country.get('BR').zone_identifiers.inspect
+puts "I am: #{server.state}"
+puts "Time Now: #{now}"
 
-now = tz.now
+puts "Start Time: #{START_TIME}"
+puts "Stop Time: #{STOP_TIME}"
 
-puts "now #{now}"
-puts "start hour #{START_HOUR}"
-puts "stop hour #{STOP_HOUR}"
+stopped_range = (now > STOP_TIME)
+running_range = (now >= START_TIME && now <= STOP_TIME)
 
-stopped_range = (now.hour >= STOP_HOUR && now.hour < START_HOUR)
-running_range = !stopped_range
+puts "Stopped Range: #{stopped_range}"
+puts "Running Range: #{running_range}"
 
 if stopped_range && server.state != 'stopped'
-  puts "stopping server #{server.id}"
+  puts "Stopping Server #{server.id}"
 
   server.stop
-  # server.wait_for { state == 'stopped' }
+  server.wait_for { state == 'stopped' }
+  puts "Stopped Server #{server.id}"
 end
 
 if running_range && server.state != 'running'
-  puts "starting server #{server.id}"
+  puts "Starting Server #{server.id}"
 
   server.start
-
   if elastic_ip = ENV['AWS_ELASTIC_IP']
     server.wait_for { state == 'running' }
-    puts "associating #{elastic_ip} to #{server.id}"
+    puts "Started Server #{server.id}"
+    puts "Associating #{elastic_ip} To #{server.id}"
     conn.associate_address server.id, elastic_ip
-    # conn.associate_address server.id, 127.0.0.0
   end
 end
 
-puts "done #{server.id}"
+puts "Job Done #{server.id}"
+puts "I Am: #{server.state}"
 
